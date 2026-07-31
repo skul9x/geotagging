@@ -9,5 +9,6 @@ data class GeoImage(
     val dateAdded: Long,
     val size: Long,
     val latitude: Double? = null,
-    val longitude: Double? = null
+    val longitude: Double? = null,
+    val isPickerUri: Boolean = false
 )

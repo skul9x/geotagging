@@ -1,14 +1,21 @@
 package com.skul9x.geotagging.ui.home
 
 import android.app.Application
+import android.app.RecoverableSecurityException
+import android.content.Context
 import android.content.Intent
+import android.content.IntentSender
 import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.skul9x.geotagging.data.model.GeoImage
 import com.skul9x.geotagging.utils.ExifUtils
+import com.skul9x.geotagging.utils.ExifWriteResult
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,9 +28,13 @@ import java.util.UUID
 
 sealed class HomeUiEvent {
     data class ShowSnackbar(val message: String) : HomeUiEvent()
+    data class RequestWritePermission(val intentSender: IntentSender) : HomeUiEvent()
 }
 
-class HomeViewModel(application: Application) : AndroidViewModel(application) {
+class HomeViewModel @JvmOverloads constructor(
+    application: Application,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) : AndroidViewModel(application) {
 
     private val context = application.applicationContext
 
@@ -33,13 +44,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiEvent = Channel<HomeUiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
+    private var pendingLocationUpdate: Pair<Double, Double>? = null
+
     // Xử lý ảnh chọn lẻ từ Photo Picker
     fun addImages(uris: List<Uri>) {
         if (uris.isEmpty()) return
         
         _uiState.update { it.copy(isLoading = true) }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val newImages = uris.mapNotNull { uri ->
                 processUri(uri)
             }
@@ -51,7 +64,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun loadImagesFromFolder(treeUri: Uri) {
         _uiState.update { it.copy(isLoading = true) }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             // 1. Giữ quyền truy cập lâu dài vào thư mục này
             try {
                 val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or
@@ -109,7 +122,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     uri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
-            } catch (e: Exception) { /* Ignore */ }
+            } catch (t: Throwable) { /* Ignore */ }
         }
 
         var name = knownName ?: "Unknown"
@@ -117,14 +130,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         
         // Nếu chưa biết tên/size (từ PhotoPicker), query lại
         if (knownName == null) {
-            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                    if (nameIndex != -1) name = cursor.getString(nameIndex) ?: "Unknown"
-                    if (sizeIndex != -1) size = cursor.getLong(sizeIndex)
+            try {
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                        if (nameIndex != -1) name = cursor.getString(nameIndex) ?: "Unknown"
+                        if (sizeIndex != -1) size = cursor.getLong(sizeIndex)
+                    }
                 }
-            }
+            } catch (t: Throwable) { /* Ignore query errors */ }
         }
 
         val location = ExifUtils.readLocation(context, uri)
@@ -136,7 +151,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             dateAdded = System.currentTimeMillis(),
             size = size,
             latitude = location?.first,
-            longitude = location?.second
+            longitude = location?.second,
+            isPickerUri = ExifUtils.isPickerUri(uri)
         )
     }
 
@@ -161,6 +177,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val currentImages = _uiState.value.images
         if (currentImages.isEmpty()) return
 
+        pendingLocationUpdate = Pair(latitude, longitude)
+
         _uiState.update { 
             it.copy(
                 isProcessing = true, 
@@ -169,23 +187,63 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             ) 
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val total = currentImages.size
             var successCount = 0
+            var permissionRequested = false
             
             val updatedImages = currentImages.mapIndexed { index, image ->
-                val success = ExifUtils.writeLocation(context, image.uri, latitude, longitude)
-                if (success) successCount++
+                // Route: Picker URIs → copy-modify-save, others → direct write
+                val result = if (image.isPickerUri) {
+                    ExifUtils.writeLocationViaCopy(
+                        context, image.uri, image.name, latitude, longitude
+                    )
+                } else {
+                    ExifUtils.writeLocation(context, image.uri, latitude, longitude)
+                }
+
+                val updatedImage = when (result) {
+                    is ExifWriteResult.Success -> {
+                        successCount++
+                        image.copy(latitude = latitude, longitude = longitude)
+                    }
+                    is ExifWriteResult.CopyWriteSuccess -> {
+                        successCount++
+                        // Switch to the new writable MediaStore URI for future edits
+                        image.copy(
+                            uri = result.newUri,
+                            latitude = latitude,
+                            longitude = longitude,
+                            isPickerUri = false  // Now it's a MediaStore URI we own
+                        )
+                    }
+                    is ExifWriteResult.PermissionDenied -> {
+                        if (!permissionRequested) {
+                            val intentSender = getIntentSenderFromException(context, result.exception, image.uri)
+                            if (intentSender != null) {
+                                permissionRequested = true
+                                sendEvent(HomeUiEvent.RequestWritePermission(intentSender))
+                            } else {
+                                sendEvent(HomeUiEvent.ShowSnackbar("Không có quyền ghi EXIF cho ảnh: ${image.name}"))
+                            }
+                        }
+                        image
+                    }
+                    is ExifWriteResult.FileNotFound -> {
+                        sendEvent(HomeUiEvent.ShowSnackbar("Không tìm thấy file ảnh: ${image.name}"))
+                        image
+                    }
+                    is ExifWriteResult.WriteFailed -> {
+                        sendEvent(HomeUiEvent.ShowSnackbar("Lỗi khi ghi toạ độ GPS cho ảnh: ${image.name}"))
+                        image
+                    }
+                }
                 
                 _uiState.update { 
                     it.copy(processProgress = (index + 1).toFloat() / total) 
                 }
 
-                if (success) {
-                    image.copy(latitude = latitude, longitude = longitude)
-                } else {
-                    image
-                }
+                updatedImage
             }
 
             _uiState.update {
@@ -196,7 +254,35 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
             
-            sendEvent(HomeUiEvent.ShowSnackbar("Hoàn tất: $successCount/$total ảnh thành công"))
+            if (!permissionRequested && successCount > 0) {
+                sendEvent(HomeUiEvent.ShowSnackbar("Hoàn tất: Đã cập nhật GPS cho $successCount/$total ảnh"))
+            }
+        }
+    }
+
+    fun onWritePermissionGranted() {
+        pendingLocationUpdate?.let { (lat, lng) ->
+            updateLocationForImages(lat, lng)
+        }
+    }
+
+    private fun getIntentSenderFromException(context: Context, exception: SecurityException, uri: Uri): IntentSender? {
+        return try {
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
+                    try {
+                        MediaStore.createWriteRequest(context.contentResolver, listOf(uri)).intentSender
+                    } catch (e: Exception) {
+                        (exception as? RecoverableSecurityException)?.userAction?.actionIntent?.intentSender
+                    }
+                }
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                    (exception as? RecoverableSecurityException)?.userAction?.actionIntent?.intentSender
+                }
+                else -> null
+            }
+        } catch (t: Throwable) {
+            (exception as? RecoverableSecurityException)?.userAction?.actionIntent?.intentSender
         }
     }
 

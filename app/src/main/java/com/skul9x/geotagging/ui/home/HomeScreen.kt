@@ -1,7 +1,9 @@
 package com.skul9x.geotagging.ui.home
 
+import android.app.Activity
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
@@ -91,12 +93,25 @@ fun HomeScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     
-    // Listen for UI events (Toast/Snackbar)
+    // Launcher: Ghi file Scoped Storage (IntentSender result)
+    val writePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            viewModel.onWritePermissionGranted()
+        }
+    }
+
+    // Listen for UI events (Toast/Snackbar/WritePermission)
     LaunchedEffect(key1 = true) {
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is HomeUiEvent.ShowSnackbar -> {
                     snackbarHostState.showSnackbar(event.message)
+                }
+                is HomeUiEvent.RequestWritePermission -> {
+                    val intentSenderRequest = IntentSenderRequest.Builder(event.intentSender).build()
+                    writePermissionLauncher.launch(intentSenderRequest)
                 }
             }
         }
@@ -208,7 +223,7 @@ fun HomeScreen(
         ) {
             if (uiState.isProcessing) {
                 LinearProgressIndicator(
-                    progress = uiState.processProgress,
+                    progress = { uiState.processProgress },
                     modifier = Modifier.fillMaxWidth()
                 )
             }

@@ -2,6 +2,7 @@ package com.skul9x.geotagging.integration
 
 import com.skul9x.geotagging.ui.FileRangeSearchTest
 import com.skul9x.geotagging.ui.LauncherIconResourceTest
+import com.skul9x.geotagging.ui.home.HomeViewModelTest
 import com.skul9x.geotagging.ui.range.FileOperationsHelperTest
 import com.skul9x.geotagging.ui.range.FileRangeScreenStateTest
 import com.skul9x.geotagging.ui.range.FileRangeViewModelTest
@@ -21,6 +22,7 @@ import org.junit.runners.Suite
     FileRangeViewModelTest::class,
     FileRangeFilterTest::class,
     GpsCoordinateParserTest::class,
-    NaturalOrderComparatorTest::class
+    NaturalOrderComparatorTest::class,
+    HomeViewModelTest::class
 )
 class IntegrationTestSuite

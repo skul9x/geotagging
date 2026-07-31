@@ -61,7 +61,7 @@ geotagging-main/
 │   │   └── test/                    # Unit tests & End-to-End Integration Test Suite
 ├── .github/
 │   └── workflows/
-│       └── build.yml                # CI/CD pipeline tự động build APK v1.4
+│       └── build.yml                # CI/CD pipeline tự động build APK v1.5
 ├── build.gradle.kts
 └── settings.gradle.kts
 ```
@@ -72,7 +72,7 @@ geotagging-main/
 
 ### Cách 1: Tải file APK dựng sẵn
 Bạn có thể tải trực tiếp bản build APK mới nhất từ phần [Releases](https://github.com/skul9x/geotagging/releases) của repository:
-- **Tệp cài đặt**: `geotagging-v1.4.apk`
+- **Tệp cài đặt**: `YTSummary-v1.5.apk`
 
 ### Cách 2: Tự biên dịch từ mã nguồn (Build from source)
 1. **Clone repository**:
@@ -117,4 +117,4 @@ Bạn có thể tải trực tiếp bản build APK mới nhất từ phần [Re
 
 ## 📄 Bản Quyền (Copyright)
 
-Copyright 2026 Nguyễn Duy Trường
+Copyright {this_year} Nguyễn Duy Trường
