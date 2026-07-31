@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,7 +27,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
@@ -64,6 +68,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
@@ -73,6 +78,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.skul9x.geotagging.data.model.GeoImage
+import com.skul9x.geotagging.utils.GpsCoordinateParser
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -237,54 +243,164 @@ fun EditLocationDialog(
     onDismiss: () -> Unit,
     onConfirm: (Double, Double) -> Unit
 ) {
+    var quickInputText by remember { mutableStateOf("") }
     var latStr by remember { mutableStateOf("") }
     var longStr by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+
+    val clipboardManager = LocalClipboardManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+
+    val currentParsed = remember(latStr, longStr, quickInputText) {
+        GpsCoordinateParser.parseCoordinates(latStr, longStr)
+            ?: GpsCoordinateParser.parseSingleLineCoordinates(quickInputText)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Đặt Location mới") },
         text = {
-            Column {
+            Column(modifier = Modifier.animateContentSize()) {
                 Text(
                     text = "Nhập toạ độ GPS để áp dụng cho tất cả ảnh đang chọn.",
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = 12.dp)
                 )
-                
+
+                // Single line input for Google Maps format
                 OutlinedTextField(
-                    value = latStr,
-                    onValueChange = { 
-                        latStr = it 
-                        error = null
+                    value = quickInputText,
+                    onValueChange = { input ->
+                        quickInputText = input
+                        val parsed = GpsCoordinateParser.parseSingleLineCoordinates(input)
+                        if (parsed != null) {
+                            latStr = parsed.first.toString()
+                            longStr = parsed.second.toString()
+                            error = null
+                        } else if (input.isNotBlank()) {
+                            error = "Không thể phân tích chuỗi toạ độ nhanh"
+                        } else {
+                            error = null
+                        }
                     },
-                    label = { Text("Vĩ độ (Latitude)") },
-                    placeholder = { Text("VD: 21.0285") },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal,
-                        imeAction = ImeAction.Next
-                    ),
+                    label = { Text("Dán/Nhập chuỗi toạ độ nhanh (Google Maps)") },
+                    placeholder = { Text("VD: 21,1573890, 106,1998193") },
+                    trailingIcon = {
+                        if (quickInputText.isNotEmpty()) {
+                            IconButton(onClick = {
+                                quickInputText = ""
+                                error = null
+                            }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Xoá chuỗi nhanh")
+                            }
+                        }
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = longStr,
-                    onValueChange = { 
-                        longStr = it
-                        error = null
+
+                Spacer(Modifier.height(4.dp))
+
+                // Paste from Clipboard Button
+                TextButton(
+                    onClick = {
+                        val clipText = clipboardManager.getText()?.text
+                        if (!clipText.isNullOrBlank()) {
+                            quickInputText = clipText
+                            val parsed = GpsCoordinateParser.parseSingleLineCoordinates(clipText)
+                                ?: GpsCoordinateParser.parseCoordinates(clipText, "")
+                            if (parsed != null) {
+                                latStr = parsed.first.toString()
+                                longStr = parsed.second.toString()
+                                error = null
+                            } else {
+                                error = "Bộ nhớ tạm không chứa toạ độ hợp lệ"
+                            }
+                        } else {
+                            error = "Bộ nhớ tạm rỗng"
+                        }
                     },
-                    label = { Text("Kinh độ (Longitude)") },
-                    placeholder = { Text("VD: 105.8542") },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal,
-                        imeAction = ImeAction.Done
-                    ),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                if (error != null) {
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Dán từ bộ nhớ tạm")
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = latStr,
+                        onValueChange = { newLat ->
+                            latStr = newLat
+                            val parsed = GpsCoordinateParser.parseCoordinates(newLat, longStr)
+                            if (parsed != null) {
+                                error = null
+                            } else if (newLat.isNotBlank() || longStr.isNotBlank()) {
+                                error = "Toạ độ không hợp lệ (-90..90, -180..180)"
+                            } else {
+                                error = null
+                            }
+                        },
+                        label = { Text("Vĩ độ (Lat)") },
+                        placeholder = { Text("21.0285 / 21,0285") },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Next
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    OutlinedTextField(
+                        value = longStr,
+                        onValueChange = { newLong ->
+                            longStr = newLong
+                            val parsed = GpsCoordinateParser.parseCoordinates(latStr, newLong)
+                            if (parsed != null) {
+                                error = null
+                            } else if (latStr.isNotBlank() || newLong.isNotBlank()) {
+                                error = "Toạ độ không hợp lệ (-90..90, -180..180)"
+                            } else {
+                                error = null
+                            }
+                        },
+                        label = { Text("Kinh độ (Long)") },
+                        placeholder = { Text("105.8542 / 105,8542") },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Done
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                if (currentParsed != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "Toạ độ hợp lệ: ${currentParsed.first}, ${currentParsed.second}",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                } else if (error != null) {
+                    Spacer(Modifier.height(8.dp))
                     Text(
                         text = error!!,
                         color = MaterialTheme.colorScheme.error,
@@ -298,15 +414,16 @@ fun EditLocationDialog(
             Button(
                 onClick = {
                     keyboardController?.hide()
-                    val lat = latStr.toDoubleOrNull()
-                    val long = longStr.toDoubleOrNull()
-                    
-                    if (lat != null && long != null && lat >= -90 && lat <= 90 && long >= -180 && long <= 180) {
-                        onConfirm(lat, long)
+                    val parsed = GpsCoordinateParser.parseCoordinates(latStr, longStr)
+                        ?: GpsCoordinateParser.parseSingleLineCoordinates(quickInputText)
+
+                    if (parsed != null) {
+                        onConfirm(parsed.first, parsed.second)
                     } else {
                         error = "Toạ độ không hợp lệ (-90..90, -180..180)"
                     }
-                }
+                },
+                enabled = currentParsed != null
             ) {
                 Text("Áp dụng")
             }

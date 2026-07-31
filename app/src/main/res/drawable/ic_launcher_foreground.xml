@@ -1,30 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
+
+    <!-- Subtle drop shadow layer for card stack -->
+    <path
+        android:pathData="M 30,46 C 30,42.7 32.7,40 36,40 L 64,40 C 67.3,40 70,42.7 70,46 L 70,70 C 70,73.3 67.3,76 64,76 L 36,76 C 32.7,76 30,73.3 30,70 Z"
+        android:fillColor="#33000000" />
+
+    <!-- File Range Stack (Layer 3 - Back card) -->
+    <path
+        android:pathData="M 27,48 C 27,45.2 29.2,43 32,43 L 58,43 C 60.8,43 63,45.2 63,48 L 63,68 C 63,70.8 60.8,73 58,73 L 32,73 C 29.2,73 27,70.8 27,68 Z"
+        android:fillColor="#FF80CBC4" />
+
+    <!-- File Range Stack (Layer 2 - Middle card) -->
+    <path
+        android:pathData="M 31,44 C 31,41.2 33.2,39 36,39 L 63,39 C 65.8,39 68,41.2 68,44 L 68,65 C 68,67.8 65.8,70 63,70 L 36,70 C 33.2,70 31,67.8 31,65 Z"
+        android:fillColor="#FF26A69A" />
+
+    <!-- Main Image Frame (Layer 1 - Front photo card) -->
+    <path
+        android:pathData="M 35,40 C 35,37.2 37.2,35 40,35 L 68,35 C 70.8,35 73,37.2 73,40 L 73,62 C 73,64.8 70.8,67 68,67 L 40,67 C 37.2,67 35,64.8 35,62 Z"
+        android:fillColor="#FFFFFFFF" />
+
+    <!-- Photo Frame Content: Landscape mountains & Sun inside photo card -->
+    <path
+        android:pathData="M 39,59 L 47,49 L 53,55 L 59,47 L 69,59 Z"
+        android:fillColor="#FF004D40" />
+    <path
+        android:pathData="M 44,43 m -2.5,0 a 2.5,2.5 0 1,0 5,0 a 2.5,2.5 0 1,0 -5,0"
+        android:fillColor="#FFE040FB" />
+
+    <!-- Location Pin Shadow -->
+    <path
+        android:pathData="M 64,30 C 57.4,30 52,35.4 52,42 C 52,51 64,63.5 64,63.5 C 64,63.5 76,51 76,42 C 76,35.4 70.6,30 64,30 Z"
+        android:fillColor="#26000000" />
+
+    <!-- Geotag Location Pin Badge (Vibrant Coral Pin with Gradient) -->
+    <path
+        android:pathData="M 63,28 C 56.4,28 51,33.4 51,40 C 51,49 63,61.5 63,61.5 C 63,61.5 75,49 75,40 C 75,33.4 69.6,28 63,28 Z">
         <aapt:attr name="android:fillColor">
             <gradient
-                android:endX="85.84757"
-                android:endY="92.4963"
-                android:startX="42.9492"
-                android:startY="49.59793"
+                android:startX="51"
+                android:startY="28"
+                android:endX="75"
+                android:endY="61.5"
                 android:type="linear">
-                <item
-                    android:color="#44000000"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00000000"
-                    android:offset="1.0" />
+                <item android:color="#FFFF5252" android:offset="0.0" />
+                <item android:color="#FFD50000" android:offset="1.0" />
             </gradient>
         </aapt:attr>
     </path>
+
+    <!-- Location Pin Inner Dot -->
     <path
-        android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
-        android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+        android:pathData="M 63,40 m -4,0 a 4,4 0 1,0 8,0 a 4,4 0 1,0 -8,0"
+        android:fillColor="#FFFFFFFF" />
 </vector>

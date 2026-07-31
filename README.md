@@ -1,133 +1,120 @@
-# 📍 Batch Geotagging & File Range Manager Android App
+# Batch Geotagging & File Range Manager 📍📁
 
-Ứng dụng Android đa năng hỗ trợ **gắn tọa độ địa lý (Geotagging)** hàng loạt cho hình ảnh qua dữ liệu EXIF và **Quản lý dải tệp tin (File Range Manager)** nâng cao. Được phát triển bằng **Kotlin** và giao diện hiện đại **Jetpack Compose (Material 3)**.
+Ứng dụng Android hiện đại, tối ưu cho việc **gán tọa độ GPS hàng loạt (Batch Geotagging)** vào dữ liệu ảnh EXIF và **quản lý dải tệp (File Range Manager)** linh hoạt, chính xác và trực quan.
 
----
-
-## 🌟 Tính năng chính
-
-### 1. 📍 Batch Geotagging (Gắn tọa độ EXIF hàng loạt)
-- 📸 **Chọn ảnh linh hoạt**:
-  - Chọn một hoặc nhiều ảnh lẻ bằng **Android Photo Picker**.
-  - Chọn toàn bộ thư mục ảnh thông qua **Storage Access Framework (SAF)**.
-- 🗺️ **Đọc & Hiển thị thông tin EXIF GPS**: Tự động trích xuất vĩ độ (Latitude) và kinh độ (Longitude) từ dữ liệu EXIF của từng tệp ảnh.
-- ✏️ **Cập nhật tọa độ hàng loạt**: Cho phép nhập tọa độ GPS mới và áp dụng cập nhật EXIF cho tất cả các bức ảnh đã chọn cùng lúc.
-- ⚡ **Xử lý bất đồng bộ (Coroutines)**: Ghi dữ liệu EXIF chạy trên IO Thread kèm thanh tiến trình thời gian thực, đảm bảo giao diện luôn mượt mà.
-
-### 2. 🗂️ Quản lý dải tệp tin (File Range Manager)
-- 🔢 **Lọc theo dải (Range Filter)**: Lọc và chọn tệp tin theo chỉ số bắt đầu và kết thúc (vd: từ file số `001` đến file số `050`).
-- 🔤 **Natural Order Sorting**: Sắp xếp tên tệp thông minh theo thứ tự tự nhiên (ví dụ: `file1.jpg` -> `file2.jpg` -> `file10.jpg` thay vì kiểu sắp xếp ký tự thông thường).
-- 🛠️ **Thao tác hàng loạt**:
-  - **Đổi tên (Rename)**: Đổi tên các file theo mẫu đánh số tự động.
-  - **Sao chép (Copy)**: Sao chép dải tệp tin tới thư mục đích.
-  - **Di chuyển (Move)**: Di chuyển dải tệp tin tới vị trí mới.
-  - **Xóa (Delete)**: Xóa an toàn dải tệp tin đã chọn.
-- 📊 **Hộp thoại tiến trình thời gian thực**: Hiển thị % tiến độ, số lượng tệp đã xử lý và cho phép hủy thao tác đang chạy.
+![Android SDK 34](https://img.shields.io/badge/Android-SDK%2034-3DDC84?style=flat&logo=android&logoColor=white)
+![Kotlin 2.0.0](https://img.shields.io/badge/Kotlin-2.0.0-7F52FF?style=flat&logo=kotlin&logoColor=white)
+![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-4285F4?style=flat&logo=jetpackcompose&logoColor=white)
+![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat&logo=githubactions&logoColor=white)
 
 ---
 
-## 🛠️ Công nghệ & Thư viện sử dụng
+## 📌 Tính Năng Nổi Bật
 
-- **Ngôn ngữ**: [Kotlin 2.0.0](https://kotlinlang.org/)
-- **UI Framework**: [Jetpack Compose](https://developer.android.com/jetpack/compose) với **Material 3**
-- **Điền hướng (Navigation)**: `androidx.navigation:navigation-compose` (2.7.7)
-- **Kiến trúc**: **MVVM (Model - View - ViewModel)** + Unidirectional Data Flow (StateFlow, Coroutines)
-- **Các thư viện chính**:
-  - `androidx.exifinterface:exifinterface` (v1.3.7): Đọc và ghi metadata EXIF của hình ảnh.
-  - `io.coil-kt:coil-compose` (v2.6.0): Tải và hiển thị ảnh bất đồng bộ hiệu năng cao.
-  - `androidx.documentfile:documentfile` (v1.0.1): Duyệt và quản lý tập tin từ `TreeUri` (Folder picker).
-  - `androidx.activity:activity-compose` (v1.9.0): Tích hợp ActivityResultLauncher (Photo Picker, SAF).
+### 1. 📍 Batch Geotagging (Gán Tọa Độ GPS Hàng Loạt)
+- **Chọn ảnh linh hoạt**: Cho phép chọn nhiều ảnh lẻ từ thư viện hoặc quét toàn bộ ảnh trong một thư mục.
+- **Phân tích tọa độ thông minh (`GpsCoordinateParser`)**:
+  - Hỗ trợ cả định dạng dấu chấm (`21.0285, 105.8542`) và dấu phẩy (`21,0285, 105,8542`).
+  - Phân tích cú pháp chuỗi tọa độ đơn dòng sao chép nhanh từ Google Maps (VD: `21.1573890, 106.1998193`).
+  - Nút **"Dán từ bộ nhớ tạm"** tự động phát hiện và trích xuất tọa độ GPS từ clipboard.
+- **Xem trước & Chỉnh sửa trực quan**: Xem trạng thái tọa độ EXIF của từng tệp ảnh ngay trên giao diện danh sách.
+
+### 2. 📁 File Range Manager (Quản Lý Dải Tệp Tự Động)
+- **Chọn dải tệp thông minh**: Lựa chọn tệp Bắt đầu (*Start File*) và tệp Kết thúc (*End File*) với thuật toán sắp xếp tự nhiên (*Natural Order Comparator*).
+- **Menu chọn tệp cải tiến**: Tích hợp ô tìm kiếm tên tệp theo thời gian thực và xem trước ảnh thu nhỏ (Thumbnail) bằng Coil.
+- **Thao tác sao chép & di chuyển (COPY / MOVE)**:
+  - Tùy chọn gom dải tệp vào thư mục con mới (*Subfolder*).
+  - Tự động chuyển vùng làm việc vào thư mục mới sau khi hoàn thành.
+- **Theo dõi tiến trình**: Hiển thị thanh phần trăm và số lượng tệp đã xử lý theo thời gian thực.
 
 ---
 
-## 📂 Cấu trúc thư mục dự án
+## 🛠 Công Nghệ Sử Dụng
 
-```text
-com.skul9x.geotagging/
-├── MainActivity.kt                # Activity chính khởi chạy ứng dụng
-├── data/
-│   └── model/
-│       ├── FileItem.kt            # Model lưu thông tin tệp tin chung
-│       ├── FileOperationMode.kt   # Enum định nghĩa các chế độ thao tác tệp (Copy, Move, Rename, Delete)
-│       └── GeoImage.kt            # Model lưu thông tin ảnh (Uri, Tên, Dung lượng, Tọa độ GPS)
-├── ui/
-│   ├── home/                      # Màn hình Geotagging chính
-│   │   ├── HomeScreen.kt          # Giao diện xem danh sách ảnh và nhập tọa độ GPS
-│   │   └── HomeViewModel.kt       # ViewModel xử lý đọc/ghi EXIF
-│   ├── navigation/
-│   │   └── MainTabScreen.kt       # Điều hướng tab giữa Geotagging và File Range Manager
-│   ├── range/                     # Màn hình Quản lý dải tệp tin
-│   │   ├── FileRangeScreen.kt     # Giao diện bộ lọc dải và thao tác tệp
-│   │   ├── FileRangeViewModel.kt  # ViewModel quản lý state và các tác vụ dải tệp
-│   │   └── components/            # Các UI Component phụ trách hiển thị tiến trình & Dialog
-│   └── theme/                     # Cấu hình giao diện Material 3 (Color, Theme, Type)
-└── utils/
-    ├── ExifUtils.kt               # Helper utility hỗ trợ đọc/ghi vị trí GPS vào EXIF
-    ├── FileOperationsHelper.kt    # Helper thực hiện đổi tên, sao chép, di chuyển, xóa tệp
-    ├── FileRangeFilter.kt         # Thuật toán lọc tệp theo dải
-    └── NaturalOrderComparator.kt  # Thuật toán sắp xếp tên file theo thứ tự tự nhiên
+- **Ngôn ngữ lập trình**: Kotlin 2.0.0
+- **Giao diện người dùng (UI)**: Jetpack Compose với hệ thống thiết kế Material 3
+- **Tải & Xem trước ảnh**: Coil Compose (`io.coil-kt:coil-compose:2.7.0`)
+- **Xử lý EXIF Metadata**: Android `ExifInterface`
+- **Xử lý bất đồng bộ**: Kotlin Coroutines & Flow
+- **Kiến trúc ứng dụng**: MVVM (Model-View-ViewModel) kết hợp Jetpack StateFlow
+- **Hệ thống Build**: Gradle (Kotlin DSL, AGP 8.5+)
+- **Tự động hóa CI/CD**: GitHub Actions tự động build APK và tạo Release GitHub
+
+---
+
+## 📂 Cấu Trúc Thư Mục Dự Án
+
+```
+geotagging-main/
+├── app/
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/com/skul9x/geotagging/
+│   │   │   │   ├── data/            # Data models & storage logic
+│   │   │   │   ├── ui/
+│   │   │   │   │   ├── home/        # Màn hình Batch Geotagging & Edit Location Dialog
+│   │   │   │   │   ├── range/       # Màn hình File Range Manager & components
+│   │   │   │   │   └── theme/       # Color palette & Typography (Material 3)
+│   │   │   │   ├── utils/           # GpsCoordinateParser, NaturalOrderComparator, ExifHelper
+│   │   │   │   └── MainActivity.kt
+│   │   │   └── res/                 # Resource drawables, Adaptive Icons, Mipmap XMLs
+│   │   └── test/                    # Unit tests & End-to-End Integration Test Suite
+├── .github/
+│   └── workflows/
+│       └── build.yml                # CI/CD pipeline tự động build APK v1.4
+├── build.gradle.kts
+└── settings.gradle.kts
 ```
 
 ---
 
-## 📋 Quyền ứng dụng (Permissions)
+## 🚀 Hướng Dẫn Cài Đặt & Chạy Ứng Dụng
 
-Ứng dụng khai báo các quyền trong `AndroidManifest.xml`:
-- `android.permission.READ_MEDIA_IMAGES` (Android 13+)
-- `android.permission.READ_EXTERNAL_STORAGE` (Android 12 trở xuống)
-- `android.permission.ACCESS_MEDIA_LOCATION`: Đọc dữ liệu tọa độ vị trí EXIF từ tệp phương tiện.
+### Cách 1: Tải file APK dựng sẵn
+Bạn có thể tải trực tiếp bản build APK mới nhất từ phần [Releases](https://github.com/skul9x/geotagging/releases) của repository:
+- **Tệp cài đặt**: `geotagging-v1.4.apk`
 
----
-
-## 🚀 Hướng dẫn cài đặt & Biên dịch
-
-### Yêu cầu hệ thống
-- **Android Studio**: Jellyfish (2023.3.1) hoặc mới hơn.
-- **JDK**: Java 17 hoặc 21.
-- **Android SDK**: Compile SDK 34, Minimum SDK 24 (Android 7.0+).
-
-### Các bước biên dịch thủ công
+### Cách 2: Tự biên dịch từ mã nguồn (Build from source)
 1. **Clone repository**:
    ```bash
    git clone https://github.com/skul9x/geotagging.git
    cd geotagging
    ```
 
-2. **Mở dự án trong Android Studio**:
-   - Mở Android Studio -> **Open** -> Chọn thư mục dự án.
-   - Chờ Gradle Sync hoàn tất các phụ thuộc.
+2. **Mở dự án bằng Android Studio**:
+   - Khuyến nghị sử dụng **Android Studio Ladybug (2024.2.1+)** hoặc phiên bản mới hơn.
+   - Đảm bảo JDK 17 được cấu hình trong `Project Structure`.
 
-3. **Biên dịch và Chạy (Build & Run)**:
-   - Sử dụng Gradle Wrapper:
-     ```bash
-     ./gradlew assembleDebug
-     ```
-   - Tệp APK đầu ra sẽ nằm tại: `app/build/outputs/apk/debug/app-debug.apk`
+3. **Chạy Unit Tests & Kiểm thử**:
+   ```bash
+   ./gradlew test
+   ```
 
----
-
-## 📖 Hướng dẫn sử dụng
-
-### Tab 1: Geotagging
-1. **Thêm ảnh**: Nhấn **"Ảnh"** để chọn tệp lẻ hoặc **"Thư mục"** để chọn toàn bộ thư mục chứa ảnh.
-2. **Xem vị trí**: Tọa độ GPS trích xuất từ EXIF sẽ hiển thị góc dưới mỗi ảnh.
-3. **Cập nhật tọa độ**: Nhấn nút FAB ✏️, nhập **Vĩ độ (Latitude)** và **Kinh độ (Longitude)**, sau đó nhấn **"Áp dụng"**.
-
-### Tab 2: File Range Manager
-1. **Chọn thư mục làm việc**: Nhấn chọn thư mục chứa các tệp cần xử lý.
-2. **Lọc dải tệp**: Nhập chỉ số bắt đầu và kết thúc (vd: `1` đến `50`) để chọn danh sách tệp mong muốn.
-3. **Thực hiện thao tác**: Chọn hành động (Đổi tên, Sao chép, Di chuyển, Xóa), thiết lập tham số và theo dõi tiến trình thực hiện thời gian thực.
+4. **Biên dịch APK Debug**:
+   ```bash
+   ./gradlew assembleDebug
+   ```
+   *File APK sau khi build nằm tại:* `app/build/outputs/apk/debug/app-debug.apk`
 
 ---
 
-## ⚙️ CI/CD & Tự động hóa
+## 📖 Hướng Dẫn Sử Dụng
 
-Dự án tích hợp **GitHub Actions CI/CD** tại `.github/workflows/build.yml`:
-- Tự động đóng gói ứng dụng thành tệp `geotagging-v1.3.apk`.
-- Tự động khởi tạo **GitHub Release** với tag `v1.3` và đính kèm bản build `geotagging-v1.3.apk` khi có thay đổi trên nhánh `main` hoặc khi đẩy tag mới.
+1. **Gán tọa độ GPS cho ảnh**:
+   - Chọn mục **"Ảnh"** hoặc **"Thư mục"** ở thanh điều hướng dưới cùng để nạp ảnh vào danh sách.
+   - Nhấn nút **Sửa (Edit)** ở góc dưới bên phải.
+   - Nhập tọa độ Lat/Long hoặc dán chuỗi từ Google Maps (VD: `21.1573890, 106.1998193`), hoặc nhấn **"Dán từ bộ nhớ tạm"**.
+   - Nhấn **"Áp dụng"** để cập nhật tọa độ EXIF cho toàn bộ danh sách ảnh.
+
+2. **Quản lý dải tệp (File Range)**:
+   - Chuyển sang thẻ **File Range**.
+   - Chọn **Source Directory** (thư mục nguồn) và **Target Directory** (thư mục đích).
+   - Chọn **Start File** và **End File** từ danh sách thả xuống (có thể tìm kiếm và xem thumbnail).
+   - Chọn chế độ **COPY** hoặc **MOVE**, bật tùy chọn thư mục con nếu cần.
+   - Bấm **"Start Operation"** để thực thi.
 
 ---
 
-## 📄 Bản quyền (Copyright)
+## 📄 Bản Quyền (Copyright)
 
 Copyright 2026 Nguyễn Duy Trường
